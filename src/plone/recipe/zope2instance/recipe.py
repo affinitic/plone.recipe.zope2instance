@@ -118,6 +118,12 @@ class Recipe(Scripts):
         elif wsgi_opt.lower() not in ('on', 'true', '1'):
             self.wsgi_config = wsgi_opt
 
+        if 'pipeline' not in options:
+            options['pipeline'] = '''
+                translogger
+                egg:Zope#httpexceptions
+                zope
+            '''.strip()
         # Get Scripts' attributes
         return Scripts.__init__(self, buildout, name, options)
 
@@ -770,23 +776,21 @@ class Recipe(Scripts):
         else:
             accesslog_args = accesslog_args.format(accesslog_name)
 
-        pipeline = []
+        pipeline = options['pipeline'].split()
         if accesslog_name.lower() == 'disable':
-            pipeline = ['egg:Zope#httpexceptions']
             event_handlers = ''
-        else:
-            pipeline = [
-                'translogger', 'egg:Zope#httpexceptions']
+            pipeline = [line for line in pipeline if line != "translogger"]
 
         sentry_dsn = options.get('sentry_dsn', '')
         if sentry_dsn:
-            pipeline.append('sentry')
+            if "zope" in pipeline:
+                pipeline.insert(pipeline.index("zope"), 'sentry')
+            else:
+                pipeline.append('sentry')
         sentry_level = options.get('sentry_level', 'INFO')
         sentry_event_level = options.get('sentry_event_level', 'ERROR')
         sentry_ignore = options.get('sentry_ignore', '')
 
-        pipeline.append('zope')
-        pipeline = '\n    '.join(pipeline)
         wsgi_options = {
             'location': options['location'],
             'http_address': listen,
@@ -806,7 +810,7 @@ class Recipe(Scripts):
             'eventlog_kwargs': eventlog_kwargs,
             'fast-listen': fast,
             'http_address': listen,
-            'pipeline': pipeline,
+            'pipeline': '\n    '.join(pipeline),
             'sentry_dsn': sentry_dsn,
             'sentry_level': sentry_level,
             'sentry_event_level': sentry_event_level,
