@@ -4,7 +4,7 @@ from setuptools import setup
 
 
 name = "plone.recipe.zope2instance"
-version = '6.4.1.dev0'
+version = '6.5.0.dev0'
 
 setup(
     name=name,
@@ -46,6 +46,7 @@ setup(
         'ZEO',
         'waitress >= 1.2.0',
         'Paste',
+        'repoze.profile',
     ],
     extras_require={
         'test': [
